@@ -62,21 +62,9 @@ final class SolicitudHttp implements Runnable {
         enviarString(CRLF,out);
 
         // Enviar el archivo solicitado.
-        //ESTO SE PUEDE SACAR DEL IF?? TODO
-        //if (inputStream != null) {
-        if (inputStream == null)
-            System.out.println("Nulo");
-
         enviarBytes(inputStream, out);
         inputStream.close();
-        /*} else {
-            inputStream = ClassLoader.getSystemResourceAsStream("./404.html" );
-            file = new File("src/main/resources" + "./404.html");
-            filesize = (int) file.length();
-            enviarBytes(inputStream, out);
-            inputStream.close();
 
-        }*/
 
         // Cierra los streams y el socket.
         out.close();
