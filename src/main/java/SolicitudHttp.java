@@ -1,8 +1,15 @@
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.util.StringTokenizer;
 
 final class SolicitudHttp implements Runnable {
     final static String CRLF = "\r\n";
@@ -22,8 +29,7 @@ final class SolicitudHttp implements Runnable {
     }
 
     public void procesarSolicitud() throws Exception {
-        BufferedWriter out = new BufferedWriter(
-                new OutputStreamWriter(socket.getOutputStream()));
+        BufferedOutputStream out = new BufferedOutputStream(socket.getOutputStream()); // Usado para strings y bytes
 
         BufferedReader in = new BufferedReader(
                 new InputStreamReader(socket.getInputStream()));
@@ -31,23 +37,89 @@ final class SolicitudHttp implements Runnable {
         String lineaDeLaSolicitudHttp = in.readLine();
 
         System.out.println("Solicitud: " + lineaDeLaSolicitudHttp);
+        StringTokenizer partesSolicitud = new StringTokenizer(lineaDeLaSolicitudHttp);
 
-        // recoge y muestra las líneas de header.
-        String linea = "";
+        String metodo = partesSolicitud.nextToken();
+        String archivo = partesSolicitud.nextToken();
+        System.out.println("Metodo: " + metodo);
+        System.out.println("Archivo: " + archivo);
 
-        while ((linea = in.readLine()) != null && !linea.isEmpty()) {
-            System.out.println(linea);
+        // Abre el archivo solicitado.
+        InputStream inputStream = ClassLoader.getSystemResourceAsStream("." + archivo);
+        String estado = stateType(inputStream);
+        System.out.println("Estado: "+estado);
+        if(inputStream == null) {
+            inputStream = ClassLoader.getSystemResourceAsStream("./404.html" );
+            archivo = "./404.html";
         }
+        File file = new File("src/main/resources" + archivo);
+        int filesize = (int) file.length();
 
-        out.write("HTTP/1.1 200 OK" + CRLF);
-        out.write("Content-Type: text/html" + CRLF);
-        out.write(CRLF);
-        out.write("<html><head><body>OLA</body></head></html>");
+
+        enviarString("HTTP/1.1 "+ estado + CRLF, out);
+        enviarString("Content-Type:" + contentType(archivo) + "charset=UTF-8" + CRLF,out);
+        enviarString("Content-Length: " + filesize + CRLF,out);
+        enviarString(CRLF,out);
+
+        // Enviar el archivo solicitado.
+        //ESTO SE PUEDE SACAR DEL IF?? TODO
+        //if (inputStream != null) {
+        if (inputStream == null)
+            System.out.println("Nulo");
+
+        enviarBytes(inputStream, out);
+        inputStream.close();
+        /*} else {
+            inputStream = ClassLoader.getSystemResourceAsStream("./404.html" );
+            file = new File("src/main/resources" + "./404.html");
+            filesize = (int) file.length();
+            enviarBytes(inputStream, out);
+            inputStream.close();
+
+        }*/
+
         // Cierra los streams y el socket.
         out.close();
+        out.flush();
         in.close();
         socket.close();
 
+    }
+
+    private static void enviarString(String line, OutputStream os) throws Exception {
+        os.write(line.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static void enviarBytes(InputStream fis, OutputStream os) throws Exception {
+        // Construye un buffer de 1KB para guardar los bytes cuando van hacia el socket.
+        byte[] buffer = new byte[1024];
+        int bytes = 0;
+
+        // Copia el archivo solicitado hacia el output stream del socket.
+        while ((bytes = fis.read(buffer)) != -1) {
+            os.write(buffer, 0, bytes);
+        }
+    }
+
+    private static String contentType(String nombreArchivo) {
+        if(nombreArchivo.endsWith(".htm") || nombreArchivo.endsWith(".html")) {
+            return "text/html;";
+        }
+        if(nombreArchivo.endsWith(".jpg") || nombreArchivo.endsWith(".jpeg")) {
+            return "image/jpeg;";
+        }
+        if(nombreArchivo.endsWith(".gif")) {
+            return "image/gif;";
+        }
+        return "application/octet-stream";
+    }
+
+    private static String stateType(InputStream is) {
+        if(is==null){
+            return "404 Not Found";
+        }else {
+            return "200 OK";
+        }
     }
 
 }
