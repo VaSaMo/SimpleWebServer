@@ -7,7 +7,6 @@ class ServidorWebSimple {
       ServerSocket socketdeEscucha = new ServerSocket(6789); 
 
       while (true) {
-         
          // el método accept() de socketdeEscucha craerá un nuevo objeto: socketdeConexion
          Socket socketdeConexion = socketdeEscucha.accept(); 
 
