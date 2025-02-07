@@ -50,11 +50,10 @@ final class SolicitudHttp implements Runnable {
         System.out.println("Estado: "+estado);
         if(inputStream == null) {
             inputStream = ClassLoader.getSystemResourceAsStream("./404.html" );
-            archivo = "./404.html";
+            archivo = "/404.html";
         }
         File file = new File("src/main/resources" + archivo);
         int filesize = (int) file.length();
-
 
         enviarString("HTTP/1.1 "+ estado + CRLF, out);
         enviarString("Content-Type:" + contentType(archivo) + "charset=UTF-8" + CRLF,out);
@@ -64,7 +63,6 @@ final class SolicitudHttp implements Runnable {
         // Enviar el archivo solicitado.
         enviarBytes(inputStream, out);
         inputStream.close();
-
 
         // Cierra los streams y el socket.
         out.close();
